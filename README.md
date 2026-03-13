@@ -13,7 +13,7 @@ A physical rotary controller for [WLED](https://kno.wled.ge/) built on the M5 St
 
 ## Hardware Required
 
-- [M5 Stack Dial](https://shop.m5stack.com/products/m5stack-dial-esp32-s3-smart-rotary-knob-w-1-28-round-touch-screen) (ESP32-S3, 1.28" round display)
+- [M5 Stack Dial](https://amzn.to/4lnZryg) (ESP32-S3, 1.28" round display) *(affiliate link)*
 - WLED device on the same WiFi network
 
 ## Setup

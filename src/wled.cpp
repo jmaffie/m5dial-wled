@@ -122,11 +122,17 @@ static void wled_task(void *param) {
     ws.onEvent(ws_event);
     ws.setReconnectInterval(3000);
 
+    uint32_t last_sent_ms = 0;
+
     while (true) {
         ws.loop();
 
-        // Wait for notification, then flush pending commands
-        if (xTaskNotifyWait(0, 0, NULL, pdMS_TO_TICKS(10)) == pdTRUE || pending_bri >= 0 || pending_toggle) {
+        // Wait for notification, then flush pending commands — rate-limited to 20Hz
+        xTaskNotifyWait(0, 0, NULL, pdMS_TO_TICKS(10));
+
+        bool has_work = pending_toggle || pending_bri >= 0 || has_pending_raw;
+        uint32_t now_ms = (uint32_t)(esp_timer_get_time() / 1000ULL);
+        if (has_work && (now_ms - last_sent_ms) >= 100) {
             bool tog = pending_toggle;
             int  bri = pending_bri;
             pending_toggle = false;
@@ -142,6 +148,7 @@ static void wled_task(void *param) {
                 ws_send(pending_raw);
                 has_pending_raw = false;
             }
+            last_sent_ms = now_ms;
         }
     }
 }
@@ -289,7 +296,7 @@ void wled_init() {
         Serial.println("\n[WiFi] Connection failed.");
     }
 
-    xTaskCreatePinnedToCore(wled_task, "wled", 4096, NULL, 1, NULL, 0);
+    xTaskCreatePinnedToCore(wled_task, "wled", 8192, NULL, 1, NULL, 0);
 }
 
 bool wled_connected() {

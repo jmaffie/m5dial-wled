@@ -8,10 +8,25 @@ static const int BRIGHTNESS_STEP = 5;
 static const int BRIGHTNESS_MIN  = 0;
 static const int BRIGHTNESS_MAX  = 255;
 
-static long last_encoder = 0;
-static int  brightness   = 128;
-static int  touch_x      = 0;
-static int  touch_y      = 0;
+// Map linear encoder position (0-255) to perceptual brightness for WLED.
+// log curve: equal perceived steps across the full range.
+static uint8_t perceptual_brightness(int linear) {
+    if (linear <= 0)   return 0;
+    if (linear >= 255) return 255;
+    return (uint8_t)(255.0f * powf(linear / 255.0f, 1.7f));
+}
+
+static long  last_encoder   = 0;
+static int   brightness     = 128;
+static int   touch_x        = 0;
+static int   touch_y        = 0;
+
+// Display brightness fade
+static float disp_bri       = 128.0f;  // current (animated)
+static float disp_bri_target = 128.0f; // target
+static float disp_bri_start  = 128.0f; // value at fade start
+static uint32_t disp_fade_start_ms = 0;
+static const uint32_t DISP_FADE_MS = 300;
 
 void setup() {
     auto cfg = M5.config();
@@ -39,7 +54,7 @@ void loop() {
         } else {
             brightness = constrain(brightness + delta * BRIGHTNESS_STEP, BRIGHTNESS_MIN, BRIGHTNESS_MAX);
             ui_set_brightness(brightness);
-            wled_set_brightness(brightness);
+            wled_set_brightness(perceptual_brightness(brightness));
         }
     }
 
@@ -55,9 +70,25 @@ void loop() {
             wled_toggle();
     }
 
-    // Sync power indicator whenever on/off state changes via WebSocket
-    if (wled_on_changed())
-        ui_set_on_state(wled_is_on());
+
+    // Dim/restore display when WLED power state changes
+    if (wled_on_changed()) {
+        disp_bri_start    = disp_bri;
+        disp_bri_target   = wled_is_on() ? 128.0f : 20.0f;
+        disp_fade_start_ms = millis();
+    }
+
+    // Animate display brightness fade
+    if (disp_bri != disp_bri_target) {
+        float t = (float)(millis() - disp_fade_start_ms) / DISP_FADE_MS;
+        if (t >= 1.0f) {
+            disp_bri = disp_bri_target;
+        } else {
+            // Exponential interpolation — equal perceived brightness steps
+            disp_bri = disp_bri_start * powf(disp_bri_target / disp_bri_start, t);
+        }
+        M5Dial.Display.setBrightness((uint8_t)disp_bri);
+    }
 
     // Sync arc color whenever WLED display color changes (button press or WebSocket state)
     if (wled_color_changed()) {
@@ -105,7 +136,7 @@ void loop() {
     // Wheel center = display center (120,120), radius 94px (188/2).
     // Hue = angle, saturation = distance/radius, value always 100%.
     if (ui_current_screen() == UI_SCREEN_COLOR && now_pressed) {
-        const float CX = 120.0f, CY = 120.0f, R = 98.0f;
+        const float CX = 120.0f, CY = 120.0f, R = 94.0f;
         float dx = touch_x - CX, dy = touch_y - CY;
         float dist = sqrtf(dx * dx + dy * dy);
         if (dist <= R) {
@@ -123,18 +154,23 @@ void loop() {
     if (rising_edge) {
         int px = touch_x, py = touch_y;
         switch (ui_current_screen()) {
-            case UI_SCREEN_MAIN:
-                if      (px >= 57 && px <= 117 && py >= 57  && py <= 117)
-                    wled_set_white();
-                else if (px >= 123 && px <= 183 && py >= 57  && py <= 117) {
-                    wled_set_color();
-                    ui_goto_color();
+            case UI_SCREEN_MAIN: {
+                // Wedge buttons: quadrant within inner circle (r < 95px from center)
+                float tdx = px - 120.0f, tdy = py - 120.0f;
+                if (tdx * tdx + tdy * tdy < 95.0f * 95.0f) {
+                    if      (tdx < 0 && tdy < 0)
+                        wled_set_white();
+                    else if (tdx >= 0 && tdy < 0) {
+                        wled_set_color();
+                        ui_goto_color();
+                    }
+                    else if (tdx < 0 && tdy >= 0)
+                        ui_goto_presets();
+                    else
+                        ui_goto_effects();
                 }
-                else if (px >= 57  && px <= 117 && py >= 123 && py <= 183)
-                    ui_goto_presets();
-                else if (px >= 123 && px <= 183 && py >= 123 && py <= 183)
-                    ui_goto_effects();
                 break;
+            }
             case UI_SCREEN_COLOR:
                 break;  // BtnA handles back; no touch-based back button
             default:

@@ -22,4 +22,3 @@ int  ui_get_effects_selection();
 void ui_scroll_presets(int delta);
 int  ui_get_presets_selection_id();
 
-void ui_set_on_state(bool on);
