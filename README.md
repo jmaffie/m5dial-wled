@@ -14,7 +14,7 @@ A physical rotary controller for [WLED](https://kno.wled.ge/) built on the M5 St
 ## Hardware Required
 
 - [M5 Stack Dial](https://amzn.to/4lnZryg) (ESP32-S3, 1.28" round display) *(affiliate link)*
-- WLED device on the same WiFi network
+- WLED device on the same WiFi network — for WLED-compatible LED controllers, [QuinLED](https://quinled.info/) makes excellent open-source hardware designed specifically for WLED
 
 ## Setup
 
