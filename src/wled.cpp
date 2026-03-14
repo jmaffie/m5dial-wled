@@ -99,7 +99,10 @@ static void ws_event(WStype_t type, uint8_t *payload, size_t length) {
                 bool was = wled_on_state;
                 if      (strncmp(on_p + 5, "true",  4) == 0) wled_on_state = true;
                 else if (strncmp(on_p + 5, "false", 5) == 0) wled_on_state = false;
-                if (wled_on_state != was) on_dirty = true;
+                if (wled_on_state != was) {
+                    on_dirty = true;
+                    Serial.printf("[WLED] on_changed: on=%d\n", wled_on_state ? 1 : 0);
+                }
             }
             break;
         }
