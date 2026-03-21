@@ -2,6 +2,14 @@
 
 A physical rotary controller for [WLED](https://kno.wled.ge/) built on the M5 Stack Dial. Use the dial to control brightness, colors, effects, and presets on your WLED lighting — no phone required.
 
+## Screenshots
+
+| Main Screen | Color Picker | Effects List |
+|---|---|---|
+| ![Main Screen](images/Main%20Screen.jpeg) | ![Color Select](images/Color%20Select%20Screen.jpeg) | ![Effects Select](images/Effects%20Select%20Screen.jpeg) |
+
+The main screen shows brightness as an arc and quick-access icons for color, presets, white mode, and power. The color screen fills the round display with an HSV wheel. The effects and presets screens use a scrollable list — rotate the dial to scroll, press to apply.
+
 ## Features
 
 - Rotary encoder controls brightness
