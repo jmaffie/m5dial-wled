@@ -143,8 +143,8 @@ static void wled_task(void *param) {
 
             if (tog) ws_send("{\"on\":\"t\"}");
             if (bri >= 0) {
-                char msg[24];
-                snprintf(msg, sizeof(msg), "{\"bri\":%d}", bri);
+                char msg[32];
+                snprintf(msg, sizeof(msg), "{\"bri\":%d,\"transition\":0}", bri);
                 ws_send(msg);
             }
             if (has_pending_raw) {
